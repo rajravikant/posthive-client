@@ -1,0 +1,75 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ::-webkit-scrollbar{
+  width: 10px;
+  background-color: rgb(255, 255, 255);
+}
+
+::-webkit-scrollbar-thumb{
+  background-color: rgba(0, 172, 181, 0.888);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track{
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+} */
+
+@layer components {
+  .btn-primary {
+    @apply py-2 px-3 bg-primary text-white font-semibold text-sm shadow-sm rounded-md hover:bg-[#2f9298]  focus:outline-none disabled:bg-gray-500;
+  }
+  .inputs {
+    @apply w-full block py-1.5 border-0 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 text-gray-900 dark:text-white  rounded-md   focus:ring-1 focus:ring-inset focus:ring-primary/50 dark:bg-dark dark:border-gray-700 sm:text-sm sm:leading-6;
+  }
+  .selects {
+    @apply bg-gray-50 border border-gray-300 text-gray-900 mb-6 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500
+  }
+
+  .tr-class {
+    @apply flex flex-col mb-4 sm:table-row sm:mb-0
+  }
+
+  .td-class {
+    @apply px-4 py-3 bg-gray-200 first:rounded-t-lg last:rounded-b-lg
+  } 
+  
+}
+
+.ql-toolbar{
+  border-radius: 10px 10px 0 0 ;
+  border-color: #e5e7eb !important;
+ 
+}
+.dark .ql-toolbar{
+  border-color: rgb(55 65 81)  !important;
+}
+
+
+
+.ql-container.ql-snow {
+  min-height: 50vh;
+  border-radius:  0 0 10px 10px;
+  border-color: #e5e7eb !important;
+}
+.dark .ql-container.ql-snow {
+  border-color: rgb(55 65 81)  !important;
+}
+
+.ql-editor {
+  font-family: 'Poppins', sans-serif;
+}
+
+.ql-editor p {
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+.ql-editor pre {
+  font-family: 'Poppins', sans-serif;
+}
