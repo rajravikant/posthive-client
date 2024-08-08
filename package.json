@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc -d && vite build",
+    "build": "tsc && vite build",
+    "vercel-build": "echo building",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview --port 5173"
   },
