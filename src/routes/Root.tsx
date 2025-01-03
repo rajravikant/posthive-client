@@ -1,5 +1,6 @@
+import React from "react";
 import Header from "../components/Navigation/Header";
-import { Outlet} from "react-router";
+import { Outlet} from "react-router-dom";
 import Footer from "../components/Navigation/Footer";
 import { Provider } from "react-redux";
 import { store,persistor } from "../store/store";
