@@ -1,21 +1,33 @@
-import axios from "axios";
-import { useLoaderData,useLocation,LoaderFunction, Link } from "react-router-dom"
 import { useEffect } from "react";
+import toast from "react-hot-toast";
+import { Link, useLocation, useParams } from "react-router";
+import Loader from "../app/Loader";
 import BlogCard from "../components/BlogCard";
-import { PostType } from "../utils/types";
+import { usePostByCategoryQuery } from "../service/usePosts";
 
 const PostByCategory = () => {
-  const loaderData = useLoaderData() as PostType[];
   const {pathname} = useLocation();
+  const {category} = useParams()
+  const {data : posts,isError,isLoading,error} = usePostByCategoryQuery(category as string);
+  
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  if(isLoading) return <Loader/>
+  if(isError){
+    toast.error(error?.message || "Something went wrong!");
+    return <p className="text-center text-2xl font-bold text-red-500">{error.message}</p>
+  }
+
+
+
+
   return (
     <section className="lg:max-w-6xl mx-auto py-10 px-5 ">
-      {loaderData.length > 0 ? (
+      {posts && posts.length > 0 ? (
         <ul className="w-full grid lg:grid-cols-3 gap-5">
-          {loaderData.map((post, index) => (
+          {posts.map((post, index) => (
             <BlogCard isAuth={false}  post={post} key={index} />
           ))}
         </ul>
@@ -38,17 +50,3 @@ const PostByCategory = () => {
 export default PostByCategory;
 
 
-export const loader = (async ({params}) => {
-  let category = params.category;
-  try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_URI}/api/posts?category=${category}`
-    );
-    if (response.status !== 200) {
-      return response;
-    }
-    return response.data.posts;
-  } catch (error) {
-    return error;
-  }
-})satisfies LoaderFunction

@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux"
-import { RootState } from "../store/store"
+import { RootState } from "../store"
 
 
 export default function ThemeProvider({children}: {children: React.ReactNode}) {

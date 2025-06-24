@@ -1,57 +1,51 @@
-import {FormEvent,useRef, useState} from "react";
-import {useNavigate} from "react-router-dom";
 import axios, { AxiosError } from "axios";
-import { useSelector, useDispatch } from 'react-redux'
-import { setLoginData,isRejected,startSignIn } from "../../features/userSlice";
-import toast,{Toaster} from "react-hot-toast";
-import postImage from '../../assets/work-4997565_1280.webp'
-import { AppDispatch, RootState } from "../../store/store";
+import { FormEvent, useState } from "react";
+import toast from "react-hot-toast";
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from "react-router";
+import postImage from '../../assets/work-4997565_1280.webp';
+import { isRejected, setLoginData, startSignIn } from "../../features/userSlice";
+import { loginUser, register } from "../../service/auth";
+import { AppDispatch, RootState } from "../../store";
 
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch:AppDispatch = useDispatch();
-  const inputRef = useRef<HTMLInputElement>(null)
   const [password,setPassword] = useState('')
+  const [identifier,setIdentifier] = useState('')
+  const [isLogin,setIsLogin] = useState(true)
   const [username,setUsername] = useState('')
   const [email,setEmail] = useState('')
-  const [isLogin,setIsLogin] = useState(true)
 
   const {isLoading} = useSelector((state:RootState)=>state.user);
 
 
   const clearFields = () => {
-    setUsername('')
-    setPassword('')
-    setEmail('')
+    setIdentifier('');
+    setPassword('');
+    setUsername('');
+    setEmail('');
   };
 
   const handleLogin = async (e:FormEvent<HTMLFormElement>)=>{
     e.preventDefault();
+
     dispatch(startSignIn());
-    let username = null
-    let email = null
-    if (inputRef.current?.value.includes('@')) {
-      email = inputRef.current.value
-    }else{
-      username = inputRef.current?.value
-    }
+
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URI}/api/users/login`,{
-        username,
-        email,
-        password,
-      },{withCredentials:true})
-       
+      const response = await loginUser(identifier.trim(), password); 
       if (response.status === 200) {
         const userData = {
-          token: response.data.accessToken,
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
           user: response.data.existingUser,
         };
         dispatch(setLoginData(userData));
         return navigate('/') ;
         }
-      }catch (error:AxiosError | any) {
+      }
+      catch (error:AxiosError | any) {
       dispatch(isRejected());
       if (axios.isAxiosError(error)) {
         return toast.error(error.response?.data.error);
@@ -63,13 +57,12 @@ const Login = () => {
 
   const handleSignUp = async (e:FormEvent<HTMLFormElement>)=>{
     e.preventDefault()
+    if (!username || !email || !password) {
+      return toast.error("All fields are required");
+    }
     dispatch(startSignIn())
     try {
-      const response = await axios.put(`${import.meta.env.VITE_API_URI}/api/users/signup`,{
-        username,
-        email,
-        password,
-      })
+      const response = await register(username.trim(), email.trim(), password);
        
       if (response.status === 201) {
         dispatch(isRejected());
@@ -93,9 +86,6 @@ const Login = () => {
   
   return (
     <div className="flex h-full w-full justify-between gap-20 items-center">
-      <Toaster/>
-
-     
         <div className=" flex-1 p-10">
           <>
           {isLogin && (  
@@ -108,8 +98,9 @@ const Login = () => {
                 type="text"
                 id="floating_outlined_email"
                 name="email_or_username"
-                ref={inputRef}
-                autoComplete="username"                
+                value={identifier} 
+                onChange={e => setIdentifier(e.target.value)}
+                autoComplete="username email"                
                 required
                 className="block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-primary peer"
                 placeholder=" "
@@ -140,6 +131,10 @@ const Login = () => {
               >
                 password
               </label>
+
+              <span className="text-sm mt-2 block text-right dark:text-gray-200">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline dark:text-blue-500">Forgot password?</Link>
+              </span>
             </div>
             
             <button

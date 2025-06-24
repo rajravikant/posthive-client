@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { Link, useLocation } from "react-router";
 import { BlogCardProps } from "../utils/types";
 
 
@@ -22,6 +22,7 @@ const BlogCard = ({ post}:BlogCardProps) => {
                 src={post.imageUrl}
                 className=" h-full  w-full object-cover group-hover:scale-105 transition-transform duration-500 ease-in-out"
                 alt={post.title}
+                defaultValue={"https://placehold.co/600x400"}
               />
             </div>
         </Link>
@@ -48,8 +49,8 @@ const BlogCard = ({ post}:BlogCardProps) => {
            
               <div className="inline-flex items-center gap-2 dark:text-gray-300 capitalize ">
                <Link className="text-sm inline-flex items-center" to={`/author/${post.creator.username}/profile`}>
-                <img src={post.creator.avatar} alt={post.creator.username} className="size-8 rounded-full object-cover" />
-                <span className=" ms-2 text-black  dark:text-white">{post.creator.username || "Unknown"}</span>
+                <img src={post.creator.avatar} alt={post.creator.username} className="size-6 rounded-full object-cover" />
+                <span className="text-xs ms-2 text-black  dark:text-white">{post.creator.username || "Unknown"}</span>
                </Link>
 
                 <span className="text-sm w-full text-right">{readingTime} min. read</span>

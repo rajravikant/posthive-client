@@ -1,9 +1,9 @@
-import {FormEvent, useState} from "react";
 import axios, { AxiosError } from "axios";
-import { Link} from "react-router-dom";
+import { FormEvent, useState } from "react";
+import toast from "react-hot-toast";
+import { Link } from "react-router";
+import postImage from '../../assets/work-4997565_1280.webp';
 import Oauth from "../../components/Auth/Oauth";
-import toast, { Toaster } from "react-hot-toast";
-import postImage from '../../assets/work-4997565_1280.webp'
 
 interface FormData {
   username: string;
@@ -94,7 +94,6 @@ const Signup = () => {
               </label>
             </div>
 
-            <Toaster />
             <div className="action space-y-3 mt-5">
               <button
                 type="submit"

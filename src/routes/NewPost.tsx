@@ -1,12 +1,13 @@
-import { useState, ChangeEvent, FormEvent,} from "react";
+import { UploadCloudIcon } from "lucide-react";
+import { ChangeEvent, FormEvent, useState, } from "react";
+import toast from "react-hot-toast";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import toast, { Toaster } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import axios from "axios";
-import { UploadCloudIcon } from "lucide-react";
-import { RootState } from "../store/store";
+import { useNavigate } from "react-router";
+import { usePostMutation } from "../service/usePosts";
+import { RootState } from "../store";
+import { categories, formats, modules } from "../utils/constants";
 
 
 type Data = {
@@ -17,17 +18,21 @@ type Data = {
   image?: File | null;
 }
 
+const initialData: Data = {
+  title: "",
+  summary: "",
+  category: "",
+  content: "",
+  image: null,
+};
+
 const NewPost = () => {
   const { currentUser } = useSelector((state:RootState) => state.user);
   const navigate = useNavigate();
   const [imagePreview, setImagePreview] = useState(null);
-  const[isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<Data>({
-    title: "",
-    category: "",
-    summary: "",
-    content : "",
-  });
+  const [formData, setFormData] = useState<Data>(initialData);
+  const mutation = usePostMutation()
+   
 
   const onChangeHandler = (e:ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement> | ChangeEvent<HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -36,25 +41,32 @@ const NewPost = () => {
 
   const onSubmitHandler = async (e:FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-      try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URI}/api/posts/create`,formData,{
-          headers: {"Content-Type" : "multipart/form-data" },
-        withCredentials:true});
-      if (response.status === 201) {
-        setIsLoading(false);
-        navigate("/author/" + currentUser?.username + "/profile");
-      }
-    } catch (error:any) {
-      toast.error(error.response.data.error);
-      setIsLoading(false);
+
+    if (!formData.title || !formData.summary || !formData.category || !formData.content || !formData.image) {
+      toast.error("Please fill all the fields");
+      return;
     }
+
+    const formDataToSend = new FormData()
+    formDataToSend.append("title", formData.title);
+    formDataToSend.append("summary", formData.summary);
+    formDataToSend.append("category", formData.category);
+    formDataToSend.append("content", formData.content);
+    formDataToSend.append("image", formData.image);
+
+    mutation.mutate(formDataToSend,{
+      onSuccess : () => {
+        toast.success("Post created successfully");
+        navigate(`/author/${currentUser?.username}/profile`);
+      },
+      onError: (error:any) => {
+        toast.error(error.response?.data?.error || "Something went wrong");
+      }
+    });
     
   };
   return (
     <section className="dark:bg-dark lg:max-w-6xl mx-auto px-5">
-      <Toaster />
       <form className="w-full py-10" onSubmit={onSubmitHandler}>
         <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 p-5 rounded-md border dark:border-gray-700 ">
           <div className="sm:col-span-full">
@@ -108,8 +120,8 @@ const NewPost = () => {
                 className="inputs"
               >
                 {categories.map((category, index) => (
-                  <option key={index} value={category}>
-                    {category}
+                  <option key={index} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
@@ -217,7 +229,7 @@ const NewPost = () => {
             type="submit"
             className="btn-primary self-center col-span-full"
           >
-            {isLoading ? "Loading..." : "Publish"}
+            {mutation.isPending ? "Loading..." : "Publish"}
           </button>
         </div>
       </form>
@@ -227,37 +239,3 @@ const NewPost = () => {
 
 export default NewPost;
 
-const modules = {
-  toolbar: [
-    [{ header: [1, 2,3, false] }],
-    
-    ["bold", "italic", "underline", "strike", "blockquote"],
-    ['code-block'],
-    [
-      { list: "ordered" },
-      { list: "bullet" },
-    ],
-    [{ 'align': [] }],
-    [{ 'color': [] }, { 'background': [] }],
-    ["link", "image"],
-    ["clean"],
-    
-  ],
-};
-
-const formats = [
-  "header",
-  "code-block",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "blockquote",
-  "list",
-  "bullet",
-  "indent",
-  "link",
-  "image",
-];
-
-const categories = ["Uncategorized","Tech", "Science", "Health", "Sports", "Entertainment"];

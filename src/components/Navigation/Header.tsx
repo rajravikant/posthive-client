@@ -1,9 +1,9 @@
-import { NavLink, } from "react-router-dom";
+import { MoonIcon, SunIcon } from "@heroicons/react/24/solid";
 import { useDispatch, useSelector } from "react-redux";
-import { SunIcon, MoonIcon} from "@heroicons/react/24/solid";
+import { NavLink, } from "react-router";
 import { toggleTheme } from "../../features/themeSlice";
+import { RootState } from "../../store";
 import UserProfileDropdown from "../UserProfileDropdown";
-import { RootState } from "../../store/store";
 
 const Header = () => {
   const { currentUser } = useSelector((state:RootState) => state.user);
@@ -58,6 +58,8 @@ const Header = () => {
               Blogs
             </NavLink>
           </li>
+          
+         
         
         
           {!currentUser && (

@@ -1,7 +1,7 @@
 
-import { PostType } from "../utils/types";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
+import { PostType } from "../utils/types";
 interface UserFeedProps {
   posts : PostType[] 
   isAuth: boolean;

@@ -1,60 +1,37 @@
-import { useEffect, useState} from "react";
-import { FallingLines } from "react-loader-spinner";
-import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import BlogCard from "./BlogCard";
 import { PostType } from "../utils/types";
+import { usePostsQuery } from "../service/usePosts";
+import LoadingIndicator from "./UI/LoadingIndicator";
 
 const RecentBlogs = () => {
-  const [fetchedData, setFetchedData] = useState<PostType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { data, isPending, isError } = usePostsQuery();
 
+  if (isError) {
+    toast.error("Failed to fetch posts");
+    return <h1>Failed to fetch posts</h1>;
+  }
 
-  useEffect(() => {
-    async function fetcher() {
-      setIsLoading(true);
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URI}/api/posts`);
-        
-        if (response.status === 200) {
-          setFetchedData(response.data.posts);
-          setIsLoading(false);
-        }
-      } catch (error:any) {
-        toast.error(error.message);
-        setIsLoading(false);
-      }
-      
-    }
-    fetcher();
-
-  }, []);
-
- 
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center">
+        <LoadingIndicator />
+      </div>
+    );
+  }
 
   return (
-    <>
-    <Toaster/>
-    {isLoading ? (
-          <div className="flex justify-center items-center">
-            <FallingLines height="50" color="#00ADB5" visible />
-          </div>
-        ):(
-          <section className="bg-white dark:bg-dark ">
-          {fetchedData && (
-            <div className="w-full  pb-5">
-              <ul className="grid lg:grid-cols-3 gap-5">
-                {fetchedData.map((post) => (
-                  <BlogCard key={post._id} post={post}  isAuth={false} />
-                ))}
-              </ul>
-            
-            </div>
-          )}
-        </section>
-        )}
-     
-    </>
+    <section className="bg-white dark:bg-dark">
+      {data && (
+        <div className="w-full pb-5">
+          <ul className="grid gap-5 lg:grid-cols-3">
+            {data.map((post: PostType) => (
+              <BlogCard key={post._id} post={post} isAuth={false} />
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 };
 

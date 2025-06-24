@@ -1,7 +1,6 @@
-import { useNavigation} from "react-router-dom";
-import { useEffect,useRef } from "react";
-import {LoadingBarRef} from 'react-top-loading-bar'
-import LoadingBar from 'react-top-loading-bar'
+import { useEffect, useRef } from "react";
+import { useNavigation } from "react-router";
+import LoadingBar, { LoadingBarRef } from 'react-top-loading-bar';
 const NavigationLoadingBar = () => {
   const navigation = useNavigation();
   const loadingBarRef = useRef<LoadingBarRef>(null);

@@ -1,9 +1,9 @@
-import { GoogleAuthProvider, signInWithPopup, getAuth } from "firebase/auth";
-import { app } from "../../utils/firebase";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useDispatch } from 'react-redux'
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useDispatch } from 'react-redux';
+import { useNavigate } from "react-router";
 import { setLoginData } from "../../features/userSlice";
+import { app } from "../../utils/firebase";
 const Oauth = () => {
   const auth = getAuth(app);
   const dispatch = useDispatch();

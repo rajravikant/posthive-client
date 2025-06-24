@@ -35,11 +35,12 @@ Thumbs.db
 .env.production
 
 
-
+.prettierrc
 postcss.config.js
-prettier.config.js
+prettier.config.cjs
 tailwind.config.ts
 tsconfig.app.json
+pnpm-lock.yaml
 tsconfig.json
 tsconfig.node.json
 vite.config.ts

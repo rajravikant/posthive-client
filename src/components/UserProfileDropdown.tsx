@@ -1,22 +1,21 @@
 import {
   Menu,
-  Transition,
   MenuButton,
-  MenuItems,
   MenuItem,
+  MenuItems,
+  Transition,
 } from "@headlessui/react";
-import { Fragment } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  UserCircleIcon,
   PowerIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/solid";
+import { Fragment } from "react";
+import { Link, useNavigate } from "react-router";
 
-import { Link } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { logoutAction } from "../features/userSlice";
-import axios from "axios";
-import { RootState } from "../store/store";
+import { logoutUser } from "../service/auth";
+import { RootState } from "../store";
 
 const UserProfileDropdown = ()=> {
   const { currentUser } = useSelector((state:RootState) => state.user);
@@ -25,8 +24,8 @@ const UserProfileDropdown = ()=> {
 
   const onLogout = async () => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URI}/api/users/logout`,{},{withCredentials:true})
-      if (response.status === 200) {
+      const response = await logoutUser()
+      if (response.status === 204) {
         dispatch(logoutAction());
         navigate("/login");
       }

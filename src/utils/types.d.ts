@@ -22,7 +22,8 @@ export type Creator = {
 
 export type User = {
     currentUser: Creator | null;
-    token: string | null;
+    accessToken: string | null;
+    refreshToken: string | null;
     isLoading: boolean;
 }
 

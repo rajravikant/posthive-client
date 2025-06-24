@@ -1,60 +1,42 @@
-import { FormEvent, useEffect, useState } from "react";
-import axios from "axios";
-import { FallingLines } from "react-loader-spinner";
-import BlogCard from "../components/BlogCard";
-import Pagination from "../components/UI/Pagination";
-import toast, { Toaster } from "react-hot-toast";
-import { useLocation } from "react-router-dom";
 import { SearchIcon } from "lucide-react";
-import { PostType } from "../utils/types";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import BlogCard from "../components/BlogCard";
+import Button from "../components/UI/Button";
+import LoadingIndicator from "../components/UI/LoadingIndicator";
+import { useDebounce } from "../hooks/useDebounce";
+import { usePaginatedPostsQuery } from "../service/usePosts";
+import { categories } from "../utils/constants";
 
 export default function Blogs() {
-  const [blogs, setBlogs] = useState<PostType[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState<number>(0);
-  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [category, setCategory] = useState("");
-  const [sortBy, setSortBy] = useState("desc");
+  const [sortBy, setSortBy] = useState<"asc" | "desc">("desc");
+  const query = useDebounce(searchTerm, 1000);
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const search = urlParams.get("search");
-    if (search) {
-      setSearchTerm(search);
-    }
-    fetchBlogs();
-  }, [currentPage, category, sortBy]);
 
-  async function fetchBlogs() {
+  
+  const { data,
+     isError, 
+     isLoading, 
+     error, 
+     hasNextPage, 
+     fetchNextPage, 
+     isFetchingNextPage 
+    } = usePaginatedPostsQuery(query, category.toLowerCase(), sortBy)
 
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URI
-        }/api/posts?startIndex=${currentPage}&category=${category}&direction=${sortBy}&searchTerm=${searchTerm}`
-      );
-      setBlogs(response.data.posts);
-      setTotalPages(response.data.totalPosts);
-    } catch (error) {
-      toast.error("Failed to fetch data");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  const searchHandler = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (searchTerm === null || searchTerm === "") {
-      return;
-    }
-    fetchBlogs();
-  }
+
+
+    isError && toast.error(`Error: ${error.message}`)
+
+    const blogs = data?.pages.flatMap(page => page.posts) || [];
+
+    
+
+
   return (
     <section className="max-w-7xl mx-auto p-5 min-h-screen ">
-      <Toaster />
       <div className="h-full w-full">
         <div className="header w-fulf py-3 grid lg:grid-cols-2 gap-5 ">
           {searchTerm && (
@@ -69,7 +51,7 @@ export default function Blogs() {
                 id="sortBy"
                 className="inputs "
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => setSortBy(e.target.value as "asc" | "desc")}
               >
                 <option value="desc">Newest</option>
                 <option value="asc">Oldest</option>
@@ -89,20 +71,16 @@ export default function Blogs() {
                   setCategory(e.target.value);
                 }}
               >
-                <option value="all">All</option>
-                <option value="tech">Tech</option>
-                <option value="lifestyle">Lifestyle</option>
-                <option value="business">Business</option>
-                <option value="health">Health</option>
-                <option value="entertainment">Entertainment</option>
-                <option value="education">Education</option>
-                <option value="science">Science</option>
-                <option value="web development">Web Development</option>
+               {categories.map((category, index) => (
+                  <option key={index} value={category.value}>
+                    {category.label}
+                  </option>
+               ))}
               </select>
             </div>
           </form>
 
-          <form className="relative col-span-full" onClick={searchHandler} >
+          <form className="relative col-span-full" >
             <input type="search" id="search-box" value={searchTerm} onChange={(e) => {
               setSearchTerm(e.target.value)
             }} className="block p-2 w-full z-20 text-sm text-gray-900 bg-gray-50 rounded-md border-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-blue-500 " placeholder="Search Blogs,Techs ..." required />
@@ -114,24 +92,35 @@ export default function Blogs() {
         </div>
 
         <div className="blogs w-full py-5">
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center items-center">
-              <FallingLines visible={true} height="50" color="#00ADB5" />
+              <LoadingIndicator/>
             </div>
           ) : (
             <div>
-              {blogs.length > 0 && (
+              {blogs && blogs.length > 0 ? (
                 <>
                   <ul className="grid lg:grid-cols-3 gap-5">
                     {blogs.map((blog) => <BlogCard key={blog._id}
                       post={blog} isAuth={false} />
                     )}
                   </ul>
-                  <Pagination
-                    totalPages={totalPages}
-                    page={currentPage}
-                    setPage={setCurrentPage} />
+
+                  {hasNextPage ? (
+                    <div>
+                      <Button onClick={() => fetchNextPage()} >
+                        {isFetchingNextPage ? "Loading more..." : "Load More"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>No more posts to load</div>
+                  )}
+
                 </>
+              ):(
+                <div className="text-center text-2xl font-bold text-gray-500">
+                  No posts found for "{searchTerm}" in category "{category || 'All'}"
+                </div>
               )}
 
             </div>
@@ -145,13 +134,7 @@ export default function Blogs() {
         </div>
 
 
-        {blogs.length === 0 && !loading && (
-          <div className="flex justify-center items-center">
-            <h2 className="text-2xl text-gray-900 dark:text-white">
-              No posts found
-            </h2>
-          </div>
-        )}
+       
 
 
 

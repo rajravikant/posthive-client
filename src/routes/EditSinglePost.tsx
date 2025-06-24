@@ -1,11 +1,14 @@
-import { ChangeEvent, FormEvent, useState} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { UploadCloudIcon } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import toast, { Toaster } from "react-hot-toast";
-import { useNavigate,useLoaderData,LoaderFunction } from "react-router-dom";
-import axios, { AxiosError } from "axios";
-import { UploadCloudIcon } from "lucide-react";
-import { PostType } from "../utils/types";
+import { Link, useNavigate, useParams } from "react-router";
+import Loader from "../app/Loader";
+import { getPostById } from "../service/blog";
+import { useEditPostMutation } from "../service/usePosts";
+import { categories, formats, modules } from "../utils/constants";
 
 type Data = {
   title: string;
@@ -13,59 +16,97 @@ type Data = {
   category: string;
   content: string;
   image?: File | null;
-}
-
+};
 
 const EditSinglePost = () => {
-  // const { currentUser } = useSelector((state:RootState) => state.user);
   const navigate = useNavigate();
-  const data = useLoaderData() as PostType;
-
-  const [formData, setFormData] = useState<Data>({
-    title: data.title,
-    summary: data.summary,
-    category: data.category,
-    content: data.content,
-    image: null,
+  const { postId } = useParams();
+  const queryClient = useQueryClient()
+  const {
+    data,
+    isLoading: postLoader,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["blog", postId!],
+    queryFn: () => getPostById(postId as string),
   });
-  const [imagePreview, setImagePreview] = useState(data.imageUrl);
-  const[isLoading, setIsLoading] = useState(false);
 
+  const edit = useEditPostMutation();
+  const [imagePreview, setImagePreview] = useState("");
+  const [formData, setFormData] = useState<Data>({} as Data);
 
+  useEffect(() => {
+    if (data) {
+      setFormData({
+        title: data.title,
+        summary: data.summary,
+        category: data.category,
+        content: data.content,
+        image: null,
+      });
+      setImagePreview(data.imageUrl || "");
+    }
+  }, [data]);
 
-  const onChangeHandler = (e:ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement> | ChangeEvent<HTMLSelectElement>) => {
+  const onChangeHandler = (
+    e:
+      | ChangeEvent<HTMLInputElement>
+      | ChangeEvent<HTMLTextAreaElement>
+      | ChangeEvent<HTMLSelectElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-
-  const onSubmitHandler = async (e:FormEvent<HTMLFormElement>) => {
+  const onSubmitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-      try {
-      const response = await axios.patch(
-        `${import.meta.env.VITE_API_URI}/api/posts/${data._id}`,formData,{
-          headers: {"Content-Type" : "multipart/form-data" },withCredentials: true
-        }
-      );
-      if (response.status === 200) {
-        setIsLoading(false);
-        navigate("/post/" + response.data.slug);
-      }
-    } catch (error:AxiosError | any) {
-      if (axios.isAxiosError(error)) {
-        setIsLoading(false);
-        return toast.error(error.response?.data.error);
-      }
-      console.log(error);
-      
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("summary", formData.summary);
+    form.append("category", formData.category);
+    form.append("content", formData.content);
+    if (formData.image) {
+      form.append("image", formData.image);
     }
-    
+
+    edit.mutate(
+      { postId: postId as string, formData: form },
+      {
+        onSuccess: (data) => {
+          queryClient.invalidateQueries({ queryKey: ["blog", data.slug] });
+          toast.success("Post updated successfully");
+          navigate("/post/" + data.slug);
+        },
+        onError: (error) => {
+          toast.error(`Error updating post: ${error.message}`);
+        },
+      },
+    );
   };
+
+  if (postLoader) {
+    return <Loader/>
+  }
+
+  if (isError) {
+    return (
+      <section className="bg-white dark:bg-dark">
+        <div className="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
+            <div className="mx-auto max-w-screen-sm text-center">
+                <h1 className="mb-4 text-7xl tracking-tight font-extrabold lg:text-9xl text-rose-600 dark:text-rose-500">Error</h1>
+                <p className="mb-4 text-3xl tracking-tight font-bold text-gray-900 md:text-4xl dark:text-white">Post unavailable</p>
+                
+                <Link to="/" className="inline-flex text-white bg-rose-600 hover:bg-rose-800 focus:ring-4 focus:outline-none focus:ring-rose-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-rose-900 my-4">Back to Homepage</Link>
+            </div>   
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="dark:bg-dark lg:max-w-6xl mx-auto px-5">
-      <Toaster />
+    <section className="mx-auto px-5 dark:bg-dark lg:max-w-6xl">
       <form className="w-full py-10" onSubmit={onSubmitHandler}>
-        <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6 border p-5 rounded-md ">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-8 rounded-md border p-5 sm:grid-cols-6">
           <div className="sm:col-span-full">
             <label
               htmlFor="title"
@@ -77,7 +118,8 @@ const EditSinglePost = () => {
               <input
                 type="text"
                 id="title"
-                value={formData.title} onChange={onChangeHandler}
+                value={formData.title}
+                onChange={onChangeHandler}
                 name="title"
                 className="inputs"
                 required
@@ -94,7 +136,8 @@ const EditSinglePost = () => {
             <div className="mt-2">
               <textarea
                 id="summary"
-                value={formData.summary} onChange={onChangeHandler}
+                value={formData.summary}
+                onChange={onChangeHandler}
                 rows={3}
                 name="summary"
                 className="inputs"
@@ -110,15 +153,16 @@ const EditSinglePost = () => {
             >
               Category
             </label>
-            <div className="mt-2 ">
+            <div className="mt-2">
               <select
-                name="category" 
-                value={formData.category} onChange={onChangeHandler}
+                name="category"
+                value={formData.category}
+                onChange={onChangeHandler}
                 className="inputs"
               >
                 {categories.map((category, index) => (
-                  <option key={index} value={category.toLowerCase()}>
-                    {category}
+                  <option key={index} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
@@ -133,12 +177,7 @@ const EditSinglePost = () => {
               Tags
             </label>
             <div className="mt-2">
-              <input
-                type="tags"
-                name="tags"
-                className="inputs"
-                
-              />
+              <input type="tags" name="tags" className="inputs" />
             </div>
           </div>
 
@@ -149,13 +188,13 @@ const EditSinglePost = () => {
             >
               Feautured Image
             </label>
-           
-            <div className="flex items-center justify-center w-full mt-2">
+
+            <div className="mt-2 flex w-full items-center justify-center">
               <label
                 htmlFor="dropzone-file"
-                className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50  dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+                className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
               >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="flex flex-col items-center justify-center pb-6 pt-5">
                   <UploadCloudIcon size={32} className="text-gray-500" />
                   <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                     <span className="font-semibold">Click to upload</span> or
@@ -174,9 +213,8 @@ const EditSinglePost = () => {
                     // @ts-ignore
                     setFormData({ ...formData, image: e.target.files[0] });
                     // @ts-ignore
-                    setImagePreview(URL.createObjectURL(e.target.files[0]))
-                  }
-                  }
+                    setImagePreview(URL.createObjectURL(e.target.files[0]));
+                  }}
                 />
               </label>
             </div>
@@ -189,14 +227,13 @@ const EditSinglePost = () => {
             >
               Image Preview
             </label>
-            <div className="mt-2 w-full ">
-              <div className="img-container h-[255px] border rounded-md overflow-hidden">
+            <div className="mt-2 w-full">
+              <div className="img-container h-[255px] overflow-hidden rounded-md border">
                 {imagePreview && (
                   <img
                     src={imagePreview || ""}
                     alt="image"
-                    className="w-full object-cover h-full"
-                    
+                    className="h-full w-full object-cover"
                   />
                 )}
               </div>
@@ -217,18 +254,17 @@ const EditSinglePost = () => {
               onChange={(e) => setFormData({ ...formData, content: e })}
               id="content"
               placeholder="Write something amazing..."
-              className="dark:text-white mt-2 "
+              className="mt-2 dark:text-white"
               modules={modules}
               formats={formats}
-              
             />
           </div>
 
           <button
             type="submit"
-            className="btn-primary self-center col-span-full"
+            className="btn-primary col-span-full self-center"
           >
-            {isLoading ? "Updating..." : "Update"}
+            {edit.isPending ? "Updating..." : "Update"}
           </button>
         </div>
       </form>
@@ -237,54 +273,3 @@ const EditSinglePost = () => {
 };
 
 export default EditSinglePost;
-
-const modules = {
-  toolbar: [
-    [{ header: [1, 2,3, false] }],
-    
-    ["bold", "italic", "underline", "strike", "blockquote"],
-    ['code-block'],
-    [
-      { list: "ordered" },
-      { list: "bullet" },
-    ],
-    [{ 'align': [] }],
-    [{ 'color': [] }, { 'background': [] }],
-    ["link", "image"],
-    ["clean"],
-    
-  ],
-};
-
-const formats = [
-  "header",
-  "code-block",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "blockquote",
-  "list",
-  "bullet",
-  "indent",
-  "link",
-  "image",
-];
-
-const categories = ["Web development","Tech", "Science", "Health", "Sports", "Entertainment"];
-
-
-
-
-export const loader = (async ({params}) => {
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_API_URI}/api/posts/${params.postId}`);
-    if (response.status !== 200) {
-      return response;
-    }
-  return response.data;
-  } catch (error) {
-    console.log(error);
-    return error;
-  }
-})satisfies LoaderFunction
